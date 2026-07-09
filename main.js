@@ -2,6 +2,7 @@ require("dotenv").config();
 
 const express = require('express')
 
+const path = require("path");
 const bcrypt = require('bcrypt');
 const crypto = require("crypto");
 const fs = require('fs')
@@ -68,8 +69,6 @@ const ADMIN = {
 const app = express()
 const PORT = process.env.PORT || 3000;
 
-const path = require("path");
-
 app.use(express.static(path.join(__dirname, "public")));
 app.use(express.urlencoded({ extended: true}));
 app.use(express.json());
@@ -80,7 +79,7 @@ app.use(session({
     saveUninitialized: false
 }))
 
-const path = require("path");
+
 
 app.set("view engine" , "ejs");
 
