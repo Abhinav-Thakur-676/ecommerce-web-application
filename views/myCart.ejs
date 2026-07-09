@@ -1,0 +1,59 @@
+<html>
+    <head>
+        <title>
+            My Cart
+        </title>
+    </head>
+    <body>
+        <h1>My cart</h1>
+
+        <p>
+
+            <% for(let i =0; i < cartProducts.length; i++){ %>
+              
+                <img src="<%= cartProducts[i].image %>" > 
+                <br>
+
+                <h3><%= cartProducts[i].name %></h3>
+                
+
+                <h4> Price: <%= cartProducts[i].price %></h4>
+                
+
+                <h4> <%= cartProducts[i].quantity %></h4>
+
+                <div id="increment_button" > 
+                    
+                    <form method="post" action="/decrease-quantity/<%= cartProducts[i].id %>">
+                        <button>-</button>
+                    </form>
+
+                    <form method="post" action="/increase-quantity/<%= cartProducts[i].id %>">
+                        <button>+</button>
+                    </form>
+
+                    
+
+                    <form method="post" action="/delete-product/<%= cartProducts[i].id %>">
+                        <button>Remove Item</button>
+                    </form>
+
+
+                </div>
+               
+ 
+
+            <%}%>
+
+
+
+        </p>
+
+        <h3>Total : <%= totalPrice %></h3>
+
+        <form action="checkout" method=""get>
+            <button type="submit">Checkout</button>
+        </form>
+        
+    </body>
+</html>

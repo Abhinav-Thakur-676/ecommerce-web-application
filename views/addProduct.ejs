@@ -1,0 +1,48 @@
+<html>
+    <head>
+        <title>Add Product</title>
+    </head>
+
+    <body>
+        
+        <form method="post" action="/admin/products/add"  enctype="multipart/form-data">
+
+            <input 
+               type="text"
+               name="name"
+               placeholder="Product Name"
+               > <br><br>
+
+            <input 
+               type="file"
+               name="image"
+               accept="Images/*"
+               placeholder="Choose image"> 
+               <br><br>
+            
+               <input 
+               type="text"
+               name="description"
+               placeholder="Description"
+               > <br><br>
+            
+            <input 
+               type="number"
+               name="price"
+               placeholder="Price"
+               > <br><br>
+            
+            <input 
+               type="number"
+               name="stock"
+               placeholder="Stock"
+               > <br><br>
+
+            <button type="submit">Add product</button>
+
+            
+
+        </form>
+
+    </body>
+</html>

@@ -1,0 +1,40 @@
+<html>
+  <head>
+    <link href="/styles/signup.css" rel="stylesheet" />
+    
+  </head>
+
+  <body>
+
+  <form method="post" action="/signup" >
+
+    <Label >Name:</Label>
+    <input name="name" type="text">
+
+    <br>
+    <label name="username">username:</label>
+    <input name="username" type="text">
+
+    <br>
+
+    <label name="email" >Email:</label>
+    <input name="email" type="email">
+
+    <br>
+
+    <label name="password">password:</label>
+    <input name="password" type="password">
+
+    <br>
+
+    <input type="submit" value="save">
+  </form>
+</body>
+
+</html>
+
+<% if(error){ %>
+  <div style="background:red;">
+    <%= error %>
+  </div>
+<%}%>

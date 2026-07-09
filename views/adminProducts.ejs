@@ -1,0 +1,62 @@
+<html>
+    <head>
+        <title>AdminProducts</title>
+    </head>
+
+    <body>
+        <h1>Manage Products</h1>
+
+<a href="/admin/products/add">
+    <button>Add Product</button>
+</a>
+
+<br><br>
+
+<table border="1">
+
+    <tr>
+        <th>Image</th>
+        <th>Name</th>
+        <th>Price</th>
+        <th>Stock</th>
+        <th>Edit</th>
+        <th>Delete</th>
+    </tr>
+
+    <% for(let i = 0; i < products.length; i++) { %>
+
+        <tr>
+
+            <td>
+                <img src="<%= products[i].image %>" width="100">
+            </td>
+
+            <td>
+                <%= products[i].name %>
+            </td>
+
+            <td>
+                ₹<%= products[i].price %>
+            </td>
+
+            <td>
+                <%= products[i].stock%>
+            </td>
+
+            <td>  <a href="/admin/products/edit/<%= products[i].id %>">
+                <button>Edit</button> </a> </td>
+
+            <td>
+               <form action="/admin/products/delete/<%= products[i].id %>" method="post">
+                   <button>Delete</button>
+               </form>
+            </td>
+
+        </tr>
+
+    <% } %>
+
+</table>
+
+    </body>
+</html>

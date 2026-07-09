@@ -1,0 +1,107 @@
+<html>
+    <head>
+        <style>
+            #popup{
+                display:none;
+                position:fixed;
+                top:30%;
+                left:35%;
+                background:white;
+                border:10x solid black;
+                padding:20px;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Wellcome</h1> <%- include("partials/headers", {user:user}) %>
+           
+
+           <%for(let i=0; i< products.length; i++) {%>
+              <div style="margin-bottom:20px; border: 1px solid black; padding: 10px; ">
+
+               <img src="<%= products[i].image %>" 
+                        width="200" height="200">
+               
+               <h3><%= products[i].name %></h3>
+
+               <button type="button"
+                       onclick="showProduct(
+                        '<%= products[i].name %>',
+                        '<%= products[i].image %>',
+                        '<%= products[i].description %>',
+                        '<%= products[i].price %>'
+                        )"
+                       >
+                       view Details
+                    </button>
+
+                <br>
+                <form method="post" action="/add-to-cart/<%= products[i].id %>">
+
+                    <button type="submit">Add to cart</button>    
+
+                    </form>
+               </div>
+               <br><br>
+            <%}%>
+
+            <% if(products.length  < totalProducts){ %>
+            
+                <a href="/home?page=<%= page +1 %>">
+                <button type="button">
+                    Load More Products
+                </button>
+                </a>
+
+            <% }%>
+
+            <div id="popup">
+
+                <h2 id="popupName">
+                    Product Details
+                </h2>
+
+                <img
+                     id="popupImage"
+                     width="250"
+                >
+
+                <h3 id="popupPrice">
+
+                </h3>
+
+                <p id="popupDescription"></p>
+
+                <button onclick="closePopup()">Close</button>
+
+            </div>
+
+            <script>
+
+            function showProduct(name, image, description, price)
+            {
+              document.getElementById("popup").style.display = "block";
+
+              document.getElementById("popupName").innerText =
+                name;
+
+              document.getElementById("popupImage").src =
+                image;
+
+              document.getElementById("popupPrice").innerText =
+              "₹" + price;
+
+              document.getElementById("popupDescription").innerText =
+                description;
+            }
+
+              function closePopup()
+            {
+              document.getElementById("popup").style.display =
+                "none";
+            }
+
+            </script>
+    </body>
+</html>
+

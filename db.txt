@@ -1,0 +1,45 @@
+[
+    {
+        "name": "a",
+        "username": "a",
+        "email": "tabhinav00003@gmail.com",
+        "password": "$2b$10$h/G3.aH0/OJqPaa3msTQ9.DTctVR4PquyushcEUitwP.jnP3okaAq",
+        "isVarified": true,
+        "mailToken": null,
+        "resetToken": "",
+        "cart": [
+            {
+                "productId": "1",
+                "quantity": 5
+            },
+            {
+                "productId": "2",
+                "quantity": 3
+            },
+            {
+                "productId": 4,
+                "quantity": 1
+            }
+        ],
+        "orders": []
+    },
+    {
+        "name": "b",
+        "username": "b",
+        "email": "tabhinav00003@gmail.com",
+        "password": "$2b$10$h4rmfjFYVxtCRLCGsx9DvOyb8n4XHiQbDH2/uKPc0ElBucWWwXScS",
+        "isVarified": true,
+        "mailToken": null,
+        "cart": [
+            {
+                "productId": 1,
+                "quantity": 2
+            },
+            {
+                "productId": 6,
+                "quantity": 2
+            }
+        ],
+        "orders": []
+    }
+]

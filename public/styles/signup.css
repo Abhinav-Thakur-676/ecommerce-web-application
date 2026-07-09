@@ -1,0 +1,25 @@
+body{
+    background-color: antiquewhite;
+}
+
+form{
+    background-color: rgb(206, 169, 169);
+    border:10px;
+    border-radius: 5px;
+    border-color: black;
+}
+
+label{
+    background-color: bisque;
+    border:10px;
+    border-radius: 5px;
+    border-color: black;
+
+}
+
+input
+{
+    border:10px;
+    border-radius: 5px;
+    border-color: black;
+}

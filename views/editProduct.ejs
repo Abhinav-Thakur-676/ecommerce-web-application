@@ -1,0 +1,65 @@
+<html>
+    <head>
+        <title>Edit Product</title>
+    </head>
+
+    <body>
+        <h1>Edit Product</h1>
+
+        <form method="post" 
+        action="/admin/products/edit/<%= product.id %>"
+        enctype="multipart/form-data">
+
+            <label for="name">Product Name:</label>
+            <input id="name"
+                   type="text"
+                   name="name"
+                   value="<%= product.name %>" >
+
+               <br>
+        
+            <label for="description">Description:</label>
+            <input id="description"
+                   type="text"
+                   name="description"
+                   value="<%= product.description %>" >
+        
+                   <br>
+
+            <label for="price">Price:</label>
+            <input id="price"
+                   type="number"
+                   name="price"
+                   value="<%= product.price %>" >
+        
+                   <br>
+
+            <label for="Stock">Stock:</label>
+            <input id="Stock"
+                   type="number"
+                   name="stock"
+                   value="<%= product.stock %>" >
+
+                   <br>
+
+            <label for="currentImage">Current Image:</label>
+            <img id="currentImage"
+                 src="<%= product.image %>" 
+                 alt="product image" 
+                 width="100px">
+
+                 <br>
+
+            <label for="newImage">New Image:</label>
+            <input id="newImage"
+                   type="file"
+                   name="image"
+                    >
+        
+                    <br>
+            <button type="submit">Update Product</button>
+        
+        </form>
+
+    </body>
+</html>

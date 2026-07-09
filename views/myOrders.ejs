@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Orders</title>
+</head>
+<body>
+
+<h1>My Orders</h1>
+
+<% if(orders.length === 0) { %>
+
+    <h3>No Orders Yet</h3>
+
+<% } else { %>
+
+    <% for(let i = 0; i < orders.length; i++) { %>
+
+        <hr>
+
+        <h3>Order ID : <%= orders[i].orderId %></h3>
+
+        <p>Date : <%= orders[i].date %></p>
+
+        <p>Status : <%= orders[i].status %></p>
+
+        <p>Total : ₹<%= orders[i].total %></p>
+
+        <h4>Items</h4>
+
+        <% for(let j = 0; j < orders[i].items.length; j++) { %>
+
+            <img src="<%= orders[i].items[j].image %>" width="120">
+
+            <p><%= orders[i].items[j].name %></p>
+
+            <p>Price : ₹<%= orders[i].items[j].price %></p>
+
+            <p>Quantity : <%= orders[i].items[j].quantity %></p>
+
+            <hr>
+
+        <% } %>
+
+    <% } %>
+
+<% } %>
+
+</body>
+</html>

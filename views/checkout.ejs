@@ -1,0 +1,43 @@
+<html>
+    <head>
+        <title>
+            Checkout
+        </title>
+    </head>
+    <body>
+        <h1>Checkout</h1>
+
+        <p>
+
+            <% for(let i =0; i < cartProducts.length; i++){ %>
+              
+                <img src="<%= cartProducts[i].image %>" > 
+                <br>
+
+                <h3><%= cartProducts[i].name %></h3>
+                
+
+                <h4> Price: <%= cartProducts[i].price %></h4>
+                
+
+                <h4> <%= cartProducts[i].quantity %></h4>
+
+
+                </div>
+               
+ 
+
+            <%}%>
+
+
+
+        </p>
+
+        <h3>Total : <%= totalPrice %></h3>
+
+        <form action="checkout" method=""get>
+            <button type="submit">Place order</button>
+        </form>
+        
+    </body>
+</html>
