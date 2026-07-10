@@ -6,19 +6,11 @@
         "password": "$2b$10$h/G3.aH0/OJqPaa3msTQ9.DTctVR4PquyushcEUitwP.jnP3okaAq",
         "isVarified": true,
         "mailToken": null,
-        "resetToken": "",
+        "resetToken": "e682d903-8d94-40ed-9630-a0e55830aa86",
         "cart": [
             {
-                "productId": "1",
-                "quantity": 5
-            },
-            {
-                "productId": "2",
-                "quantity": 3
-            },
-            {
-                "productId": 4,
-                "quantity": 1
+                "productId": 2,
+                "quantity": 2
             }
         ],
         "orders": []
@@ -40,6 +32,16 @@
                 "quantity": 2
             }
         ],
+        "orders": []
+    },
+    {
+        "name": "Abhinav Thakur",
+        "username": "Abhi",
+        "email": "TABHINAV003@GMAIL.COM",
+        "password": "$2b$10$5tSpKo5ulg7Jsku0XujDaOy3d8BJFdnqjY9YiJbrUC7q6xkwgTEPS",
+        "isVarified": false,
+        "mailToken": "6e2b47dc-20ea-4fdf-bd72-836def2f8384",
+        "cart": [],
         "orders": []
     }
 ]
