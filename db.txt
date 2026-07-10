@@ -33,15 +33,6 @@
             }
         ],
         "orders": []
-    },
-    {
-        "name": "Abhinav Thakur",
-        "username": "Abhi",
-        "email": "TABHINAV003@GMAIL.COM",
-        "password": "$2b$10$5tSpKo5ulg7Jsku0XujDaOy3d8BJFdnqjY9YiJbrUC7q6xkwgTEPS",
-        "isVarified": false,
-        "mailToken": "6e2b47dc-20ea-4fdf-bd72-836def2f8384",
-        "cart": [],
-        "orders": []
     }
+    
 ]
