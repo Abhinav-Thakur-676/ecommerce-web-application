@@ -763,10 +763,11 @@ app.post("/add-to-cart/:productId", checkAuth , function(req, res)
 
             }
 
-            const cartIndex = findCartIndex(
-                users[userIndex].cart,
-                productId
-            );
+            const cartIndex = findIndex(
+                            users[userIndex].cart,
+                            "productId",
+                            productId
+                        );
 
             if(cartIndex !== -1)
             {
@@ -820,10 +821,11 @@ app.post("/increase-quantity/:productId", checkAuth , function(req, res)
             return;
         }
 
-        const userIndex = findUserIndexByUsername(
-            users,
-            req.session.user.username
-        );
+        const userIndex = findIndex(
+                users,
+                "username",
+                req.session.user.username
+            );
 
         if(userIndex === -1)
         {
@@ -851,7 +853,11 @@ app.post("/increase-quantity/:productId", checkAuth , function(req, res)
                 return;
             }
 
-            const product = findProductById(products, productId);
+            const product = findItem(
+                            products,
+                            "id",
+                            productId
+                        );
 
             if(!product)
             {

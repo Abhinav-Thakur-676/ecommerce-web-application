@@ -10,7 +10,7 @@
         "cart": [
             {
                 "productId": 2,
-                "quantity": 2
+                "quantity": 1
             }
         ],
         "orders": []
@@ -33,6 +33,20 @@
             }
         ],
         "orders": []
+    },
+    {
+        "name": "Abhinav",
+        "username": "Abhinav",
+        "email": "TABHINAV003@GMAIL.COM",
+        "password": "$2b$10$EqtI1FdOhqNgqF4RhiGRXe4wZjoE/wrZ70dfQa6j/VPMUV3OaWypu",
+        "isVarified": true,
+        "mailToken": null,
+        "cart": [
+            {
+                "productId": 1,
+                "quantity": 2
+            }
+        ],
+        "orders": []
     }
-    
 ]
