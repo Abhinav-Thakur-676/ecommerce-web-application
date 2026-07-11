@@ -266,21 +266,16 @@ app.route("/login").get(function(req, res)
 {
     let { identifier, password } = req.body;
 
-    readData("./db.txt", function(err, users)
+    identifier = identifier.trim();
+
+    User.findOne({
+        $or: [
+            { username: identifier },
+            { email: identifier.toLowerCase() }
+        ]
+    })
+    .then(function(user)
     {
-        if(err)
-        {
-            res.render("login", { error: "Something went wrong" });
-            return;
-        }
-
-        let user = findItem(users, "username", identifier);
-
-        if(!user)
-        {
-            user = findItem(users, "email", identifier);
-        }
-
         if(!user)
         {
             res.render("login", {
@@ -319,6 +314,13 @@ app.route("/login").get(function(req, res)
             req.session.user = user;
 
             res.redirect("/home");
+        });
+
+    })
+    .catch(function()
+    {
+        res.render("login", {
+            error: "Something went wrong"
         });
     });
 });
@@ -500,37 +502,26 @@ app.route("/forget-password").get(function(req, res)
 
 }).post(function(req, res)
 {
-    let Email = req.body.email;
+    let Email = req.body.email.trim().toLowerCase();
 
-    readData("./db.txt", function(err, users)
+    User.findOne({ email: Email })
+    .then(function(user)
     {
-        if(err)
-        {
-            res.send("Something went wrong");
-            return;
-        }
-
-        const index = findIndex(users, "email", Email);
-
-        if(index === -1)
+        // Don't reveal whether the email exists
+        if(!user)
         {
             res.send("If an account exists with this email, a password reset link has been sent.");
             return;
         }
 
-        users[index].resetToken = crypto.randomUUID();
+        user.resetToken = crypto.randomUUID();
 
-        writeData("./db.txt", users, function(err)
+        user.save()
+        .then(function()
         {
-            if(err)
-            {
-                res.send("Something went wrong");
-                return;
-            }
-
             resetPassword(
-                users[index].email,
-                users[index].resetToken,
+                user.email,
+                user.resetToken,
                 function(err)
                 {
                     if(err)
@@ -542,7 +533,16 @@ app.route("/forget-password").get(function(req, res)
                     res.send("Password reset email sent successfully.");
                 }
             );
+        })
+        .catch(function()
+        {
+            res.send("Something went wrong");
         });
+
+    })
+    .catch(function()
+    {
+        res.send("Something went wrong");
     });
 });
 
@@ -551,17 +551,10 @@ app.route("/reset-password/:token").get(function(req, res)
 {
     const { token } = req.params;
 
-    readData("./db.txt", function(err, users)
+    User.findOne({ resetToken: token })
+    .then(function(user)
     {
-        if(err)
-        {
-            res.send("Something went wrong");
-            return;
-        }
-
-        const index = findIndex(users, "resetToken", token);
-
-        if(index === -1)
+        if(!user)
         {
             res.send("Invalid reset link");
             return;
@@ -571,6 +564,10 @@ app.route("/reset-password/:token").get(function(req, res)
             error: "",
             token: token
         });
+    })
+    .catch(function()
+    {
+        res.send("Something went wrong");
     });
 
 }).post(function(req, res)
@@ -578,8 +575,8 @@ app.route("/reset-password/:token").get(function(req, res)
     const { token } = req.params;
     let { new_password, confirm_password } = req.body;
 
-    // Empty password vaalidation
-    if(!new_password  || !confirm_password)
+    // Empty password validation
+    if(!new_password || !confirm_password)
     {
         res.render("resetPassword", {
             error: "Please fill in all fields",
@@ -588,7 +585,7 @@ app.route("/reset-password/:token").get(function(req, res)
         return;
     }
 
-     // Minimum password length
+    // Minimum password length
     if(new_password.length < 8)
     {
         res.render("resetPassword", {
@@ -608,17 +605,10 @@ app.route("/reset-password/:token").get(function(req, res)
         return;
     }
 
-    readData("./db.txt", function(err, users)
+    User.findOne({ resetToken: token })
+    .then(function(user)
     {
-        if(err)
-        {
-            res.send("Something went wrong");
-            return;
-        }
-
-        const index = findIndex(users, "resetToken", token);
-
-        if(index === -1)
+        if(!user)
         {
             res.send("Invalid reset link");
             return;
@@ -632,20 +622,24 @@ app.route("/reset-password/:token").get(function(req, res)
                 return;
             }
 
-            users[index].password = hash;
-            users[index].resetToken = null;
+            user.password = hash;
+            user.resetToken = null;
 
-            writeData("./db.txt", users, function(err)
+            user.save()
+            .then(function()
             {
-                if(err)
-                {
-                    res.send("Unable to update password");
-                    return;
-                }
-
                 res.redirect("/login");
+            })
+            .catch(function()
+            {
+                res.send("Unable to update password");
             });
         });
+
+    })
+    .catch(function()
+    {
+        res.send("Something went wrong");
     });
 });
 
