@@ -646,51 +646,39 @@ app.route("/reset-password/:token").get(function(req, res)
 // My Cart Route
 app.get("/my-cart", checkAuth, function(req, res)
 {
-    readData("./db.txt", function(err, users)
+    User.findOne({ username: req.session.user.username })
+    .then(function(user)
     {
-        if(err)
+        if(!user)
         {
-            res.send("Something went wrong.");
+            res.send("User not found.");
             return;
         }
 
-        const user = findItem(users, "username", req.session.user.username);
-
-        if(user === null)
+        Product.find()
+        .then(function(products)
         {
-           res.send("User not found.");
-           return;
-       }
-
-       let cart = user.cart;
-
-        readData("./products.txt", function(err, products)
-        {
-            if(err)
-            {
-                res.send("Something went wrong.");
-                return;
-            }
-
             let cartProducts = [];
             let totalPrice = 0;
 
-            for(let i = 0; i < cart.length; i++)
+            for(let i = 0; i < user.cart.length; i++)
             {
-                for(let j = 0; j < products.length; j++)
+                const product = products.find(function(item)
                 {
-                    if(Number(cart[i].productId) === products[j].id)
-                    {
-                        cartProducts.push({
-                            id: products[j].id,
-                            name: products[j].name,
-                            price: products[j].price,
-                            image: products[j].image,
-                            quantity: cart[i].quantity
-                        });
+                    return item.id === user.cart[i].productId;
+                });
 
-                        totalPrice += products[j].price * cart[i].quantity;
-                    }
+                if(product)
+                {
+                    cartProducts.push({
+                        id: product.id,
+                        name: product.name,
+                        price: product.price,
+                        image: product.image,
+                        quantity: user.cart[i].quantity
+                    });
+
+                    totalPrice += product.price * user.cart[i].quantity;
                 }
             }
 
@@ -698,56 +686,43 @@ app.get("/my-cart", checkAuth, function(req, res)
                 cartProducts,
                 totalPrice
             });
+        })
+        .catch(function()
+        {
+            res.send("Something went wrong.");
         });
+
+    })
+    .catch(function()
+    {
+        res.send("Something went wrong.");
     });
 });
 
 // Add to Cart
-app.post("/add-to-cart/:productId", checkAuth , function(req, res)
+app.post("/add-to-cart/:productId", checkAuth, function(req, res)
 {
     const productId = Number(req.params.productId);
 
     if(isNaN(productId))
-      {
-         res.send("Invalid product.");
-         return;
-      }
-
-    readData("./db.txt", function(err, users)
     {
-        if(err)
-        {
-            res.send("Something went wrong.");
-            return;
-        }
+        res.send("Invalid product.");
+        return;
+    }
 
-        const userIndex = findIndex(
-            users,
-            "username",
-            req.session.user.username
-        );
-
-        if(userIndex === -1)
+    User.findOne({ username: req.session.user.username })
+    .then(function(user)
+    {
+        if(!user)
         {
             res.send("User not found.");
             return;
         }
 
-        readData("./products.txt", function(err, products)
+        Product.findOne({ id: productId })
+        .then(function(product)
         {
-            if(err)
-            {
-                res.send("Something went wrong.");
-                return;
-            }
-
-            const product = findItem(
-                products,
-                "id",
-                Number(productId)
-            );
-
-            if(product === null)
+            if(!product)
             {
                 res.send("Product not found.");
                 return;
@@ -755,86 +730,83 @@ app.post("/add-to-cart/:productId", checkAuth , function(req, res)
 
             if(product.stock <= 0)
             {
-                res.send("Product is out of stock");
+                res.send("Product is out of stock.");
                 return;
-
             }
 
-            const cartIndex = findIndex(
-                            users[userIndex].cart,
-                            "productId",
-                            productId
-                        );
+            const cartIndex = user.cart.findIndex(function(item)
+            {
+                return item.productId === productId;
+            });
 
             if(cartIndex !== -1)
             {
-                if(users[userIndex].cart[cartIndex].quantity >= product.stock)
-                    {
-                        res.send("Maximum available stock reached.");
-                        return;
+                if(user.cart[cartIndex].quantity >= product.stock)
+                {
+                    res.send("Maximum available stock reached.");
+                    return;
+                }
 
-                    };
-
-                    users[userIndex].cart[cartIndex].quantity++;
+                user.cart[cartIndex].quantity++;
             }
             else
             {
-                users[userIndex].cart.push({
+                user.cart.push({
                     productId: productId,
                     quantity: 1
                 });
             }
 
-            writeData("./db.txt", users, function(err)
+            user.save()
+            .then(function()
             {
-                if(err)
-                {
-                    res.send("Unable to update cart.");
-                    return;
-                }
+                // Keep session in sync
+                req.session.user = user;
 
                 res.redirect("/home");
+            })
+            .catch(function()
+            {
+                res.send("Unable to update cart.");
             });
+
+        })
+        .catch(function()
+        {
+            res.send("Something went wrong.");
         });
+
+    })
+    .catch(function()
+    {
+        res.send("Something went wrong.");
     });
 });
 
 // Increase Quantity
-app.post("/increase-quantity/:productId", checkAuth , function(req, res)
+app.post("/increase-quantity/:productId", checkAuth, function(req, res)
 {
     const productId = Number(req.params.productId);
 
     if(isNaN(productId))
     {
-      res.send("Invalid product.");
-      return;
+        res.send("Invalid product.");
+        return;
     }
 
-    readData("./db.txt", function(err, users)
+    User.findOne({ username: req.session.user.username })
+    .then(function(user)
     {
-        if(err)
-        {
-            res.send("Something went wrong.");
-            return;
-        }
-
-        const userIndex = findIndex(
-                users,
-                "username",
-                req.session.user.username
-            );
-
-        if(userIndex === -1)
+        if(!user)
         {
             res.send("User not found.");
             return;
         }
 
-        const cartIndex = findIndex(
-              users[userIndex].cart,
-              "productId",
-              productId
-        );
+        const cartIndex = user.cart.findIndex(function(item)
+        {
+            return item.productId === productId;
+        });
 
         if(cartIndex === -1)
         {
@@ -842,86 +814,71 @@ app.post("/increase-quantity/:productId", checkAuth , function(req, res)
             return;
         }
 
-        readData("./products.txt", function(err, products)
+        Product.findOne({ id: productId })
+        .then(function(product)
         {
-            if(err)
-            {
-                res.send("Something went wrong.");
-                return;
-            }
-
-            const product = findItem(
-                            products,
-                            "id",
-                            productId
-                        );
-
             if(!product)
             {
                 res.send("Product not found.");
                 return;
             }
 
-            if(users[userIndex].cart[cartIndex].quantity < product.stock)
-            {
-                users[userIndex].cart[cartIndex].quantity++;
-            }
-            else
+            if(user.cart[cartIndex].quantity >= product.stock)
             {
                 res.send("Stock not available.");
                 return;
             }
 
-            writeData("./db.txt", users, function(err)
-            {
-                if(err)
-                {
-                    res.send("Unable to update cart.");
-                    return;
-                }
+            user.cart[cartIndex].quantity++;
 
+            user.save()
+            .then(function()
+            {
+                req.session.user = user;
                 res.redirect("/my-cart");
+            })
+            .catch(function()
+            {
+                res.send("Unable to update cart.");
             });
+
+        })
+        .catch(function()
+        {
+            res.send("Something went wrong.");
         });
+
+    })
+    .catch(function()
+    {
+        res.send("Something went wrong.");
     });
 });
 
 // Decrease Quantity
-app.post("/decrease-quantity/:productId", checkAuth , function(req, res)
+app.post("/decrease-quantity/:productId", checkAuth, function(req, res)
 {
     const productId = Number(req.params.productId);
 
     if(isNaN(productId))
     {
-      res.send("Invalid product.");
-      return;
+        res.send("Invalid product.");
+        return;
     }
 
-    readData("./db.txt", function(err, users)
+    User.findOne({ username: req.session.user.username })
+    .then(function(user)
     {
-        if(err)
-        {
-            res.send("Something went wrong.");
-            return;
-        }
-
-        const userIndex = findIndex(
-            users,
-            "username",
-            req.session.user.username
-        );
-
-        if(userIndex === -1)
+        if(!user)
         {
             res.send("User not found.");
             return;
         }
 
-        const cartIndex = findIndex(
-            users[userIndex].cart,
-            "productId",
-            productId
-        );
+        const cartIndex = user.cart.findIndex(function(item)
+        {
+            return item.productId === productId;
+        });
 
         if(cartIndex === -1)
         {
@@ -929,25 +886,30 @@ app.post("/decrease-quantity/:productId", checkAuth , function(req, res)
             return;
         }
 
-        if(users[userIndex].cart[cartIndex].quantity > 1)
+        if(user.cart[cartIndex].quantity > 1)
         {
-            users[userIndex].cart[cartIndex].quantity--;
+            user.cart[cartIndex].quantity--;
         }
         else
         {
-            users[userIndex].cart.splice(cartIndex, 1);
+            user.cart.splice(cartIndex, 1);
         }
 
-        writeData("./db.txt", users, function(err)
+        user.save()
+        .then(function()
         {
-            if(err)
-            {
-                res.send("Unable to update cart.");
-                return;
-            }
-
+            req.session.user = user;
             res.redirect("/my-cart");
+        })
+        .catch(function()
+        {
+            res.send("Unable to update cart.");
         });
+
+    })
+    .catch(function()
+    {
+        res.send("Something went wrong.");
     });
 });
 
