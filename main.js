@@ -88,81 +88,6 @@ app.use(session({
 
 app.set("view engine" , "ejs");
 
-// helper functions
-
-function readData(filePath , callback)
-{
-    fs.readFile( filePath , "utf-8" , function(err , data)
-    {
-
-        if(err)
-        {
-            callback(err , null);
-            return;
-        }
-
-        let parsedData = [];
-
-        try
-        {
-
-        
-        if(data.trim())
-        {
-            parsedData = JSON.parse(data);
-        }
-
-         return callback(null , parsedData);
-        }
-        catch(err)
-        {
-            return callback(err , null);
-        }
-
-    });
-}
-
-function writeData(filePath , data , callback)
-{
-    fs.writeFile(filePath , JSON.stringify(data , null , 4) , function(err)
-    {
-        if(err)
-        {
-            return callback(err);
-            
-        }
-
-        return callback(null);
-
-
-    })
-}
-
-function findIndex(array, key, value)
-{
-    for(let i = 0; i < array.length; i++)
-    {
-        if(array[i][key] === value)
-        {
-            return i;
-        }
-    }
-
-    return -1;
-}
-
-function findItem(array, key, value)
-{
-    for(let i = 0; i < array.length; i++)
-    {
-        if(array[i][key] === value)
-        {
-            return array[i];
-        }
-    }
-
-    return null;
-}
 
 //root page
 app.get('/' , (req,res) =>
@@ -397,25 +322,16 @@ app.route("/change-password").get(checkAuth, function(req, res)
 {
     let { current_password, new_password, confirm_password } = req.body;
 
-    readData("./db.txt", function(err, users)
+    User.findOne({ username: req.session.user.username })
+    .then(function(user)
     {
-        if(err)
-        {
-            res.send("Something went wrong");
-            return;
-        }
-
-        const index = findIndex(users, "username", req.session.user.username);
-
-        if(index === -1)
+        if(!user)
         {
             res.send("User not found");
             return;
         }
 
-        console.log("User found");
-
-        bcrypt.compare(current_password, users[index].password, function(err, result)
+        bcrypt.compare(current_password, user.password, function(err, result)
         {
             if(err)
             {
@@ -433,63 +349,63 @@ app.route("/change-password").get(checkAuth, function(req, res)
                 return;
             }
 
-            console.log("Current password is correct");
-
-            if(new_password === confirm_password)
+            if(new_password !== confirm_password)
             {
-                bcrypt.hash(new_password, 10, function(err, hash)
+                res.render("changePassword", {
+                    error: "Passwords do not match"
+                });
+                return;
+            }
+
+            bcrypt.hash(new_password, 10, function(err, hash)
+            {
+                if(err)
                 {
-                    if(err)
-                    {
-                        res.send("Something went wrong.");
-                        return;
-                    }
+                    res.send("Something went wrong.");
+                    return;
+                }
 
-                    users[index].password = hash;
+                user.password = hash;
 
-                    writeData("./db.txt", users, function(err)
+                user.save()
+                .then(function()
+                {
+                    changedEmail(user.email, function(err)
                     {
                         if(err)
                         {
                             res.render("changePassword", {
-                                error: "Unable to update password"
+                                error: "Unable to send email"
                             });
                             return;
                         }
 
-                        console.log("Password updated successfully");
-
-                        changedEmail(users[index].email, function(err)
+                        req.session.destroy(function(err)
                         {
                             if(err)
                             {
                                 res.render("changePassword", {
-                                    error: "Unable to send email"
+                                    error: "Unable to logout"
                                 });
                                 return;
                             }
 
-                            req.session.destroy(function(err)
-                            {
-                                if(err)
-                                {
-                                    res.render("changePassword", {
-                                        error: "Unable to logout"
-                                    });
-                                    return;
-                                }
-
-                                res.redirect("/login");
-                            });
+                            res.redirect("/login");
                         });
                     });
+                })
+                .catch(function()
+                {
+                    res.render("changePassword", {
+                        error: "Unable to update password"
+                    });
                 });
-            }
-            else
-            {
-                res.send("Passwords do not match");
-            }
+            });
         });
+    })
+    .catch(function()
+    {
+        res.send("Something went wrong");
     });
 });
 
@@ -913,42 +829,30 @@ app.post("/decrease-quantity/:productId", checkAuth, function(req, res)
     });
 });
 
-// Delete Product
-app.post("/delete-product/:productId",checkAuth , function(req, res)
+// Delete Product From Cart
+app.post("/delete-product/:productId", checkAuth, function(req, res)
 {
     const productId = Number(req.params.productId);
 
     if(isNaN(productId))
     {
-      res.send("Invalid product.");
-      return;
+        res.send("Invalid product.");
+        return;
     }
 
-    readData("./db.txt", function(err, users)
+    User.findOne({ username: req.session.user.username })
+    .then(function(user)
     {
-        if(err)
-        {
-            res.send("Something went wrong.");
-            return;
-        }
-
-        const userIndex = findIndex(
-            users,
-            "username",
-            req.session.user.username
-        );
-
-        if(userIndex === -1)
+        if(!user)
         {
             res.send("User not found.");
             return;
         }
 
-        const cartIndex = findIndex(
-            users[userIndex].cart,
-            "productId",
-            productId
-        );
+        const cartIndex = user.cart.findIndex(function(item)
+        {
+            return item.productId === productId;
+        });
 
         if(cartIndex === -1)
         {
@@ -956,69 +860,62 @@ app.post("/delete-product/:productId",checkAuth , function(req, res)
             return;
         }
 
-        users[userIndex].cart.splice(cartIndex, 1);
+        user.cart.splice(cartIndex, 1);
 
-        writeData("./db.txt", users, function(err)
+        user.save()
+        .then(function()
         {
-            if(err)
-            {
-                res.send("Unable to update cart.");
-                return;
-            }
-
+            req.session.user = user;
             res.redirect("/my-cart");
+        })
+        .catch(function()
+        {
+            res.send("Unable to update cart.");
         });
+
+    })
+    .catch(function()
+    {
+        res.send("Something went wrong.");
     });
 });
 
 // Checkout Page
-app.get("/checkout", checkAuth ,function(req, res)
+app.get("/checkout", checkAuth, function(req, res)
 {
-    readData("./db.txt", function(err, users)
+    User.findOne({ username: req.session.user.username })
+    .then(function(user)
     {
-        if(err)
+        if(!user)
         {
-            res.send("Something went wrong.");
+            res.send("User not found.");
             return;
         }
 
-        const user = findItem(users, "username", req.session.user.username);
-
-        if(user === null)
+        Product.find()
+        .then(function(products)
         {
-          res.send("User not found.");
-          return;
-        }
-
-        let cart = user.cart;
-
-        readData("./products.txt", function(err, products)
-        {
-            if(err)
-            {
-                res.send("Something went wrong.");
-                return;
-            }
-
             let cartProducts = [];
             let totalPrice = 0;
 
-            for(let i = 0; i < cart.length; i++)
+            for(let i = 0; i < user.cart.length; i++)
             {
-                for(let j = 0; j < products.length; j++)
+                const product = products.find(function(item)
                 {
-                    if(Number(cart[i].productId) === products[j].id)
-                    {
-                        cartProducts.push({
-                            id: products[j].id,
-                            name: products[j].name,
-                            price: products[j].price,
-                            image: products[j].image,
-                            quantity: cart[i].quantity
-                        });
+                    return item.id === user.cart[i].productId;
+                });
 
-                        totalPrice += products[j].price * cart[i].quantity;
-                    }
+                if(product)
+                {
+                    cartProducts.push({
+                        id: product.id,
+                        name: product.name,
+                        price: product.price,
+                        image: product.image,
+                        quantity: user.cart[i].quantity
+                    });
+
+                    totalPrice += product.price * user.cart[i].quantity;
                 }
             }
 
@@ -1026,49 +923,40 @@ app.get("/checkout", checkAuth ,function(req, res)
                 cartProducts,
                 totalPrice
             });
+        })
+        .catch(function()
+        {
+            res.send("Something went wrong.");
         });
+
+    })
+    .catch(function()
+    {
+        res.send("Something went wrong.");
     });
 });
 
 // Place Order
 app.post("/place-order", checkAuth, function(req, res)
 {
-    readData("./db.txt", function(err, users)
+    User.findOne({ username: req.session.user.username })
+    .then(function(user)
     {
-        if(err)
-        {
-            res.send("Something went wrong.");
-            return;
-        }
-
-        const userIndex = findIndex(
-            users,
-            "username",
-            req.session.user.username
-        );
-
-        if(userIndex === -1)
+        if(!user)
         {
             res.send("User not found.");
             return;
         }
 
-        let cart = users[userIndex].cart;
-
-        if(cart.length === 0)
+        if(user.cart.length === 0)
         {
-            return res.redirect("/my-cart");
+            res.redirect("/my-cart");
+            return;
         }
 
-        readData("./products.txt", function(err, products)
+        Product.find()
+        .then(function(products)
         {
-            if(err)
-            {
-                res.send("Something went wrong.");
-                return;
-            }
-
-            // Create Order
             let order =
             {
                 orderId: crypto.randomUUID(),
@@ -1078,103 +966,98 @@ app.post("/place-order", checkAuth, function(req, res)
                 status: "Pending"
             };
 
-            // Build order items
-            for(let i = 0; i < cart.length; i++)
+            for(let i = 0; i < user.cart.length; i++)
             {
-                let productFound = false;
+                const cartItem = user.cart[i];
 
-                for(let j = 0; j < products.length; j++)
+                const product = products.find(function(item)
                 {
-                    if(Number(cart[i].productId) === products[j].id)
-                    {
-                        productFound = true;
+                    return item.id === cartItem.productId;
+                });
 
-                        // Check stock
-                        if(products[j].stock < cart[i].quantity)
-                        {
-                            res.send(products[j].name + " does not have enough stock.");
-                            return;
-                        }
-
-                        order.items.push({
-                            id: products[j].id,
-                            name: products[j].name,
-                            price: products[j].price,
-                            image: products[j].image,
-                            quantity: cart[i].quantity
-                        });
-
-                        order.total +=
-                            products[j].price * cart[i].quantity;
-
-                        // Reduce Stock
-                        products[j].stock -= cart[i].quantity;
-
-                        break;
-                    }
-                }
-
-                if(!productFound)
+                if(!product)
                 {
                     res.send("One or more products are no longer available.");
                     return;
                 }
-            }
 
-            // Save updated products first
-            writeData("./products.txt", products, function(err)
-            {
-                if(err)
+                if(product.stock < cartItem.quantity)
                 {
-                    res.send("Unable to update product stock.");
+                    res.send(product.name + " does not have enough stock.");
                     return;
                 }
 
-                // Save Order
-                users[userIndex].orders.push(order);
-
-                // Empty Cart
-                users[userIndex].cart = [];
-
-                writeData("./db.txt", users, function(err)
-                {
-                    if(err)
-                    {
-                        res.send("Unable to place order.");
-                        return;
-                    }
-
-                    res.redirect("/my-orders");
+                order.items.push({
+                    id: product.id,
+                    name: product.name,
+                    price: product.price,
+                    image: product.image,
+                    quantity: cartItem.quantity
                 });
+
+                order.total += product.price * cartItem.quantity;
+
+                product.stock -= cartItem.quantity;
+            }
+
+            Promise.all(products.map(function(product)
+            {
+                return product.save();
+            }))
+            .then(function()
+            {
+                user.orders.push(order);
+                user.cart = [];
+
+                user.save()
+                .then(function()
+                {
+                    req.session.user = user;
+                    res.redirect("/my-orders");
+                })
+                .catch(function()
+                {
+                    res.send("Unable to place order.");
+                });
+
+            })
+            .catch(function()
+            {
+                res.send("Unable to update product stock.");
             });
+
+        })
+        .catch(function()
+        {
+            res.send("Something went wrong.");
         });
+
+    })
+    .catch(function()
+    {
+        res.send("Something went wrong.");
     });
 });
 
 // My Orders
-app.get("/my-orders",checkAuth , function(req, res)
+app.get("/my-orders", checkAuth, function(req, res)
 {
-    readData("./db.txt", function(err, users)
+    User.findOne({ username: req.session.user.username })
+    .then(function(user)
     {
-        if(err)
+        if(!user)
         {
-            res.send("Something went wrong.");
+            res.send("User not found.");
             return;
         }
 
-        const user = findItem(users, "username", req.session.user.username);
-
-        if(user === null)
-        {
-          res.send("User not found.");
-          return;
-        }
-
-        const orders = user.orders;
-
         res.render("myOrders", {
-            orders
+            orders: user.orders
         });
+    })
+    .catch(function()
+    {
+        res.send("Something went wrong.");
     });
 });
 
@@ -1232,17 +1115,16 @@ app.get("/admin/logout" ,function(req , res)
 // Admin Products
 app.get("/admin/products", checkAdmin, function(req, res)
 {
-    readData("./products.txt", function(err, products)
+    Product.find()
+    .then(function(products)
     {
-        if(err)
-        {
-            res.send("Something went wrong.");
-            return;
-        }
-
         res.render("adminProducts", {
             products: products
         });
+    })
+    .catch(function()
+    {
+        res.send("Something went wrong.");
     });
 });
 
@@ -1283,43 +1165,33 @@ app.route("/admin/products/add").get(checkAdmin, function(req, res)
 
     const image = "/images/" + req.file.filename;
 
-    readData("./products.txt", function(err, products)
+    Product.findOne().sort({ id: -1 })
+    .then(function(lastProduct)
     {
-        if(err)
-        {
-            res.send("Something went wrong.");
-            return;
-        }
-
         let id = 1;
 
-        if(products.length > 0)
+        if(lastProduct)
         {
-            id = products[products.length - 1].id + 1;
+            id = lastProduct.id + 1;
         }
 
-        const newProduct =
-        {
+        return Product.create({
             id,
             name,
             image,
             description,
             price: Number(price),
             stock: Number(stock)
-        };
-
-        products.push(newProduct);
-
-        writeData("./products.txt", products, function(err)
-        {
-            if(err)
-            {
-                res.send("Unable to add product.");
-                return;
-            }
-
-            res.redirect("/admin/products");
         });
+    })
+    .then(function()
+    {
+        res.redirect("/admin/products");
+    })
+    .catch(function(err)
+    {
+        console.log(err);
+        res.send("Unable to add product.");
     });
 });
 
@@ -1330,21 +1202,14 @@ app.route("/admin/products/edit/:productId").get(checkAdmin, function(req, res)
 
     if(isNaN(productId))
     {
-      res.send("Invalid product.");
-      return;
+        res.send("Invalid product.");
+        return;
     }
 
-    readData("./products.txt", function(err, products)
+    Product.findOne({ id: productId })
+    .then(function(product)
     {
-        if(err)
-        {
-            res.send("Something went wrong.");
-            return;
-        }
-
-        const product = findItem(products, "id", productId);
-
-        if(product === null)
+        if(!product)
         {
             res.send("Product not found.");
             return;
@@ -1353,78 +1218,67 @@ app.route("/admin/products/edit/:productId").get(checkAdmin, function(req, res)
         res.render("editProduct", {
             product: product
         });
+    })
+    .catch(function()
+    {
+        res.send("Something went wrong.");
     });
 
 }).post(checkAdmin, upload.single("image"), function(req, res)
 {
     const productId = Number(req.params.productId);
 
-    const
-    {
+    const {
         name,
         description,
         price,
         stock
     } = req.body;
 
-    // Validate required fields
     if(!name || !description || !price || !stock)
     {
         return res.send("All fields are required.");
     }
 
-    // Validate price
     if(Number(price) <= 0)
     {
         return res.send("Price must be greater than 0.");
     }
 
-    // Validate stock
     if(Number(stock) < 0)
     {
         return res.send("Stock cannot be negative.");
     }
 
-    readData("./products.txt", function(err, products)
+    Product.findOne({ id: productId })
+    .then(function(product)
     {
-        if(err)
-        {
-            res.send("Something went wrong.");
-            return;
-        }
-
-        const productIndex = findIndex(products, "id", productId);
-
-        if(productIndex === -1)
+        if(!product)
         {
             res.send("Product not found.");
             return;
         }
 
-        const product = products[productIndex];
-
-        // Update Product Details
         product.name = name;
         product.description = description;
         product.price = Number(price);
         product.stock = Number(stock);
 
-        // Update Image Only If New Image Uploaded
         if(req.file)
         {
             product.image = "/images/" + req.file.filename;
         }
 
-        writeData("./products.txt", products, function(err)
-        {
-            if(err)
-            {
-                res.send("Unable to update product.");
-                return;
-            }
-
-            res.redirect("/admin/products");
-        });
+        return product.save();
+    })
+    .then(function()
+    {
+        res.redirect("/admin/products");
+    })
+    .catch(function(err)
+    {
+        console.log(err);
+        res.send("Unable to update product.");
     });
 });
 
@@ -1436,43 +1290,25 @@ app.post("/admin/products/delete/:productId", checkAdmin, function(req, res)
 
     if(isNaN(productId))
     {
-      res.send("Invalid product.");
-      return;
+        res.send("Invalid product.");
+        return;
     }
 
-    readData("./products.txt", function(err, products)
+    Product.deleteOne({ id: productId })
+    .then(function(result)
     {
-        if(err)
-        {
-            res.send("Something went wrong.");
-            return;
-        }
-
-        const productIndex = findIndex(products, "id", productId);
-
-        if(productIndex === -1)
+        if(result.deletedCount === 0)
         {
             res.send("Product not found.");
             return;
         }
 
-        const deletedProduct = products[productIndex];
-
-        products.splice(productIndex, 1);
-
-        writeData("./products.txt", products, function(err)
-        {
-            if(err)
-            {
-                res.send("Unable to delete product.");
-                return;
-            }
-
-            // Future Improvement:
-            // Delete deletedProduct.image from public/images if desired.
-
-            res.redirect("/admin/products");
-        });
+        res.redirect("/admin/products");
+    })
+    .catch(function(err)
+    {
+        console.log(err);
+        res.send("Unable to delete product.");
     });
 });
 
