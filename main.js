@@ -1,7 +1,11 @@
 require("dotenv").config();
 
-const express = require('express')
+const connectDB = require("./config/db");
+const User = require("./models/User");
 
+connectDB();
+
+const express = require('express')
 const path = require("path");
 const bcrypt = require('bcrypt');
 const crypto = require("crypto");
@@ -165,7 +169,7 @@ app.get('/' , (req,res) =>
     res.render("root");
 })
 
-// signup root
+// Signup Route
 app.route("/signup").get(function(req, res)
 {
     res.render("signup", { error: "" });
@@ -174,29 +178,30 @@ app.route("/signup").get(function(req, res)
 {
     let { name, username, email, password } = req.body;
 
-    readData("./db.txt", function(err, users)
+    email = email.trim().toLowerCase();
+
+    User.findOne({
+        $or: [
+            { username: username },
+            { email: email }
+        ]
+    }).then(function(existingUser)
     {
-        if(err)
+        if(existingUser)
         {
-            res.render("signup", { error: "User not found" });
-            return;
-        }
-
-        for(let i = 0; i < users.length; i++)
-        {
-            let user = users[i];
-
-            if(user.username === username )
+            if(existingUser.username === username)
             {
-                res.render("signup", { 
-                            error: "User already exists" });
+                res.render("signup", {
+                    error: "User already exists"
+                });
                 return;
             }
 
-            if(user.email === email)
+            if(existingUser.email === email)
             {
-                res.render("signup",{ 
-                            error: "Email already exists" });
+                res.render("signup", {
+                    error: "Email already exists"
+                });
                 return;
             }
         }
@@ -205,12 +210,13 @@ app.route("/signup").get(function(req, res)
         {
             if(err)
             {
-                res.render("signup", { error: "Something went wrong" });
+                res.render("signup", {
+                    error: "Something went wrong"
+                });
                 return;
             }
 
-            let user =
-            {
+            const user = new User({
                 name: name,
                 username: username,
                 email: email,
@@ -219,20 +225,10 @@ app.route("/signup").get(function(req, res)
                 mailToken: crypto.randomUUID(),
                 cart: [],
                 orders: []
-            };
+            });
 
-            users.push(user);
-
-            writeData("./db.txt", users, function(err)
+            user.save().then(function()
             {
-                if(err)
-                {
-                    res.render("signup", {
-                        error: "Something went wrong"
-                    });
-                    return;
-                }
-
                 sendEmails(email, user.mailToken, function(err)
                 {
                     if(err)
@@ -245,7 +241,18 @@ app.route("/signup").get(function(req, res)
 
                     res.render("checkEmail");
                 });
+            }).catch(function()
+            {
+                res.render("signup", {
+                    error: "Something went wrong"
+                });
             });
+        });
+
+    }).catch(function()
+    {
+        res.render("signup", {
+            error: "Something went wrong"
         });
     });
 });
@@ -321,16 +328,9 @@ app.get("/verifymail/:token", function(req, res)
 {
     const { token } = req.params;
 
-    readData("./db.txt", function(err, users)
+    User.findOne({ mailToken: token })
+    .then(function(user)
     {
-        if(err)
-        {
-            res.send("Something went wrong");
-            return;
-        }
-
-        const user = findItem(users, "mailToken", token);
-
         if(!user)
         {
             res.send("User not found");
@@ -341,19 +341,22 @@ app.get("/verifymail/:token", function(req, res)
         user.isVarified = true;
         user.mailToken = null;
 
-        writeData("./db.txt", users, function(err)
+        user.save()
+        .then(function()
         {
-            if(err)
-            {
-                res.send("Unable to verify user");
-                return;
-            }
-
             req.session.is_logged_in = true;
             req.session.user = user;
 
             res.redirect("/home");
+        })
+        .catch(function()
+        {
+            res.send("Unable to verify user");
         });
+    })
+    .catch(function()
+    {
+        res.send("Something went wrong");
     });
 });
 

@@ -18,9 +18,10 @@
     {
         "name": "b",
         "username": "b",
-        "email": "tabhinav00003@gmail.com",
+        "email": "tabhinav00004@gmail.com",
         "password": "$2b$10$h4rmfjFYVxtCRLCGsx9DvOyb8n4XHiQbDH2/uKPc0ElBucWWwXScS",
         "isVarified": true,
+        "resetToken": null,
         "mailToken": null,
         "cart": [
             {
@@ -40,6 +41,7 @@
         "email": "TABHINAV003@GMAIL.COM",
         "password": "$2b$10$EqtI1FdOhqNgqF4RhiGRXe4wZjoE/wrZ70dfQa6j/VPMUV3OaWypu",
         "isVarified": true,
+        "resetToken": null,
         "mailToken": null,
         "cart": [
             {
