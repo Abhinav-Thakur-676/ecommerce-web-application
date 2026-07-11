@@ -2,6 +2,7 @@ require("dotenv").config();
 
 const connectDB = require("./config/db");
 const User = require("./models/User");
+const Product = require("./models/Product");
 
 connectDB();
 
@@ -367,14 +368,9 @@ app.get("/home", checkAuth, function(req, res)
 {
     let page = Number(req.query.page) || 1;
 
-    readData("./products.txt", function(err, products)
+    Product.find()
+    .then(function(products)
     {
-        if(err)
-        {
-            res.send("Unable to load products.");
-            return;
-        }
-
         let visibleProducts = products.slice(0, page * 5);
 
         res.render("home", {
@@ -383,6 +379,10 @@ app.get("/home", checkAuth, function(req, res)
             page: page,
             totalProducts: products.length
         });
+    })
+    .catch(function()
+    {
+        res.send("Unable to load products.");
     });
 });
 
